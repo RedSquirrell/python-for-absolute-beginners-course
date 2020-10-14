@@ -7,6 +7,9 @@
 
 import random
 from typing import List, Optional
+import os
+import json
+import datetime
 
 
 def main():
@@ -19,6 +22,9 @@ def main():
         [None, None, None, None, None, None, None],
         [None, None, None, None, None, None, None],
     ]
+
+    show_header()
+    show_leaderboard()
 
     # KIES EEN SPELER
     active_player_index = 0
@@ -45,6 +51,28 @@ def main():
     print(f"GAME OVER! {player} has won with the board: ")
     print()
     show_board(board)
+
+    record_win(player)
+
+
+def show_header():
+    print("--------------------------")
+    print("-----Vier op een Rij!-----")
+    print("--------------------------")
+
+
+def show_leaderboard():
+    leaders = load_leaders()
+
+    sorted_leaders = list(leaders.items())
+    sorted_leaders.sort(key=lambda l: l[1], reverse=True)
+
+    print()
+    print("LEADERBOARD")
+    for name, wins in sorted_leaders[0:5]:
+        print(f"{wins:,} -- {name}")
+    print("-----------------------------")
+    print()
 
 
 def choose_location(board, symbol, is_computer):
@@ -176,6 +204,32 @@ def find_sequences_of_four_cells_in_a_row(cells: List[str]):
             sequences.append(candidate)
 
     return sequences
+
+
+def load_leaders():
+    directory = os.path.dirname(__file__)
+    filename = os.path.join(directory, 'leaderboard.json')
+
+    if not os.path.exists(filename):
+        return {}
+
+    with open(filename, 'r', encoding='utf-8') as fin:
+        return json.load(fin)
+
+
+def record_win(winner_name):
+    leaders = load_leaders()
+
+    if winner_name in leaders:
+        leaders[winner_name] += 1
+    else:
+        leaders[winner_name] = 1
+
+    directory = os.path.dirname(__file__)
+    filename = os.path.join(directory, 'leaderboard.json')
+
+    with open(filename, 'w', encoding='utf-8') as fout:
+        json.dump(leaders, fout)
 
 
 if __name__ == '__main__':

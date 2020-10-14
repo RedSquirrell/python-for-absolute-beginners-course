@@ -2,11 +2,22 @@ import random
 import json
 import os
 import datetime
+import platform
+
+import colorama
+from colorama import Fore
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import Completer, Completion
 
 rolls = {}
 
 
 def main():
+
+    if platform.system() == 'Windows':
+        colorama.init(convert=True)
+
+    print(Fore.WHITE)
     log("App Start op...")
 
     load_rolls()
@@ -21,10 +32,12 @@ def main():
 
 
 def show_header():
+    print(Fore.LIGHTBLUE_EX)
     print("---------------------------")
-    print(" Rock Paper ScissorsV2")
-    print("     Data structures")
+    print("    Rock Paper Scissors")
+    print(" External Libraries Edition")
     print("---------------------------")
+    print(Fore.WHITE)
 
 
 def show_leaderboard():
@@ -33,6 +46,7 @@ def show_leaderboard():
     sorted_leaders = list(leaders.items())
     sorted_leaders.sort(key=lambda l: l[1], reverse=True)
 
+    print("---------------------------")
     print("LEADERBOARD:")
     for name, wins in sorted_leaders[0:5]:
         print(f"{wins:,} -- {name}")
@@ -57,12 +71,14 @@ def play_game(player_1, player_2):
         roll2 = random.choice(roll_names)
 
         if not roll1:
-            print("Try again!")
+            print(Fore.LIGHTRED_EX + "Try again!")
+            print(Fore.WHITE)
             continue
 
         log(f"Round: {player_1} rolls {roll1} and {player_2} rolls {roll2}")
-        print(f"{player_1} roll {roll1}")
-        print(f"{player_2} rolls {roll2}")
+        print(Fore.YELLOW + f"{player_1} rolls {roll1}")
+        print(Fore.LIGHTRED_EX + f"{player_2} rolls {roll2}")
+        print(Fore.WHITE)
 
         winner = check_for_winning_throw(player_1, player_2, roll1, roll2)
 
@@ -71,8 +87,9 @@ def play_game(player_1, player_2):
             print(msg)
             log(msg)
         else:
-            msg = (f'{winner} takes the round!')
-            print(msg)
+            msg = f'{winner} takes the round!'
+            fore = Fore.GREEN if winner == player_1 else Fore.LIGHTRED_EX
+            print(fore + msg + Fore.WHITE)
             log(msg)
             wins[winner] += 1
 
@@ -82,9 +99,9 @@ def play_game(player_1, player_2):
         print()
 
     overall_winner = find_winner(wins, wins.keys())
-
+    fore = Fore.GREEN if overall_winner == player_1 else Fore.LIGHTRED_EX
     msg = f"{overall_winner} wins the game!"
-    print(msg)
+    print(fore + msg + Fore.WHITE)
     log(msg)
     record_win(overall_winner)
 
@@ -113,18 +130,41 @@ def check_for_winning_throw(player_1, player_2, roll1, roll2):
 
 
 def get_roll(player_name, roll_names):
-    print("Available rolls:")
-    for index, r in enumerate(roll_names, start=1):
-        print(f"{index}. {r}")
+    if os.environ.get('PYCHARM_HOSTED') == '1':
+        print(Fore.LIGHTRED_EX + "Warning: Cannot use fancy prompt dialog in PyCharm.")
+        print(Fore.LIGHTRED_EX + "Run this app outside of PyCharm to see it in action." + Fore.WHITE)
+        print(f"Available rolls: {','.join(roll_names)}")
+        val = input(Fore.LIGHTYELLOW_EX + "What is your roll: ")
+        print(Fore.WHITE)
+        return val
 
-    text = input(f"{player_name}, what is your roll? ")
-    selected_index = int(text) - 1
+    print(f"Available rolls: {', '.join(roll_names)}.")
 
-    if selected_index < 0 or selected_index >= len(rolls):
-        print(f"Sorry {player_name}, {text} is out of bounds!")
+    # word_comp = WordCompleter(roll_names)
+    word_comp = PlayComplete()
+
+    roll = prompt(f"{player_name}, What is your roll: ", completer=word_comp)
+    print(roll)
+    if not roll or roll not in roll_names:
+        print(f"Sorry {player_name}, {roll} is out of bounds!")
         return None
 
-    return roll_names[selected_index]
+    return roll
+
+
+# def get_roll(player_name, roll_names):
+#     print("Available rolls:")
+#     for index, r in enumerate(roll_names, start=1):
+#         print(f"{index}. {r}")
+#
+#     text = input(f"{player_name}, what is your roll? ")
+#     selected_index = int(text) - 1
+#
+#     if selected_index < 0 or selected_index >= len(rolls):
+#         print(f"Sorry {player_name}, {text} is out of bounds!")
+#         return None
+#
+#     return roll_names[selected_index]
 
 
 def load_rolls():
@@ -173,6 +213,29 @@ def log(msg):
         fout.write(f"[{datetime.datetime.now().date().isoformat()}] ")
         fout.write(msg)
         fout.write('\n')
+
+
+class PlayComplete(Completer):
+
+    def get_completions(self, document, complete_event):
+        roll_names = list(rolls.keys())
+        word = document.get_word_before_cursor()
+        complete_all = not word if not word.strip() else word == '.'
+        completions = []
+
+        for roll in roll_names:
+            is_substring = word in roll
+            if complete_all or is_substring:
+
+                completion = Completion(
+                    roll,
+                    start_position=-len(word),
+                    style="fg:white bg:darkgreen",
+                    selected_style="fg:yellow bg:green")
+
+                completions.append(completion)
+
+        return completions
 
 
 if __name__ == '__main__':

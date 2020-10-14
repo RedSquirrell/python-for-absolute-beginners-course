@@ -40,6 +40,8 @@ def main():
     except KeyboardInterrupt:
         print()
         print(Fore.LIGHTCYAN_EX + "You gotta run? Ok, cya" + Fore.WHITE)
+    except Exception as x:
+        print(Fore.LIGHTRED_EX + f"Unknown error: {x}" + Fore.WHITE)
 
 
 def show_header():
